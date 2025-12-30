@@ -5,7 +5,8 @@
   "author": "Medusa (https://medusajs.com)",
   "license": "MIT",
   "files": [
-    ".medusa/server"
+    ".medusa/server",
+    "scripts"
   ],
   "exports": {
     "./package.json": "./package.json",
@@ -30,7 +31,12 @@
   "scripts": {
     "build": "medusa plugin:build",
     "dev": "medusa plugin:develop",
-    "prepublishOnly": "medusa plugin:build"
+    "prepublishOnly": "medusa plugin:build",
+    "postinstall": "node scripts/patch-buffer-equal-constant-time.js"
+  },
+  "dependencies": {
+    "@myparcel/constants": "^2.6.0",
+    "@myparcel/sdk": "^4.4.2"
   },
   "devDependencies": {
     "@medusajs/admin-sdk": "2.12.3",
@@ -40,7 +46,9 @@
     "@medusajs/test-utils": "2.12.3",
     "@medusajs/ui": "4.0.25",
     "@medusajs/icons": "2.12.3",
+    "@medusajs/js-sdk": "^2.12.3",
     "@swc/core": "1.5.7",
+    "@tanstack/react-query": "^5.51.1",
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.2.25",

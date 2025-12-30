@@ -1,65 +1,125 @@
-<p align="center">
-  <a href="https://www.medusajs.com">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/59018053/229103275-b5e482bb-4601-46e6-8142-244f531cebdb.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/59018053/229103726-e5b529a3-9b3f-4970-8a1f-c6af37f087bf.svg">
-    <img alt="Medusa logo" src="https://user-images.githubusercontent.com/59018053/229103726-e5b529a3-9b3f-4970-8a1f-c6af37f087bf.svg">
-    </picture>
-  </a>
-</p>
-<h1 align="center">
-  Medusa Plugin Starter
-</h1>
+# medusa-myparcel
 
-<h4 align="center">
-  <a href="https://docs.medusajs.com">Documentation</a> |
-  <a href="https://www.medusajs.com">Website</a>
-</h4>
+IMPORTANT: This plugin is under development and should not be used for production projects.
 
-<p align="center">
-  Building blocks for digital commerce
-</p>
-<p align="center">
-  <a href="https://github.com/medusajs/medusa/blob/master/CONTRIBUTING.md">
-    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat" alt="PRs welcome!" />
-  </a>
-    <a href="https://www.producthunt.com/posts/medusa"><img src="https://img.shields.io/badge/Product%20Hunt-%231%20Product%20of%20the%20Day-%23DA552E" alt="Product Hunt"></a>
-  <a href="https://discord.gg/xpCwq3Kfn8">
-    <img src="https://img.shields.io/badge/chat-on%20discord-7289DA.svg" alt="Discord Chat" />
-  </a>
-  <a href="https://twitter.com/intent/follow?screen_name=medusajs">
-    <img src="https://img.shields.io/twitter/follow/medusajs.svg?label=Follow%20@medusajs" alt="Follow @medusajs" />
-  </a>
-</p>
+Medusa v2 plugin that integrates MyParcel (SendMyParcel.be) delivery options, pricing, and shipment handling.
+
+## Features
+- MyParcel delivery options and pickup locations endpoint for storefront checkout.
+- Fulfillment provider that calculates prices using MyParcel surcharges plus optional base prices.
+- Admin UI to configure settings, create shipping options, list consignments, and manage shipments on orders.
+- Consignment and settings storage with encrypted API keys.
 
 ## Compatibility
+- Built against Medusa v2.12.3.
+- Node >= 20, Yarn 1.22.19.
 
-This starter is compatible with versions >= 2.4.0 of `@medusajs/medusa`. 
+## Install
 
-## Getting Started
+```bash
+yarn add medusa-myparcel
+```
 
-Visit the [Quickstart Guide](https://docs.medusajs.com/learn/installation) to set up a server.
+If you are developing locally, add it via a workspace or `file:` dependency.
 
-Visit the [Plugins documentation](https://docs.medusajs.com/learn/fundamentals/plugins) to learn more about plugins and how to create them.
+## Configuration
 
-Visit the [Docs](https://docs.medusajs.com/learn/installation#get-started) to learn more about our system requirements.
+1) Register the plugin and fulfillment provider in `medusa-config.ts`:
 
-## What is Medusa
+```ts
+import { defineConfig } from "@medusajs/framework/utils"
 
-Medusa is a set of commerce modules and tools that allow you to build rich, reliable, and performant commerce applications without reinventing core commerce logic. The modules can be customized and used to build advanced ecommerce stores, marketplaces, or any product that needs foundational commerce primitives. All modules are open-source and freely available on npm.
+export default defineConfig({
+  plugins: [
+    {
+      resolve: "medusa-myparcel",
+      options: {
+        // Optional: "A4" | "A6"
+        default_label_format: "A6",
+      },
+    },
+  ],
+  modules: {
+    fulfillment: {
+      options: {
+        providers: [
+          {
+            resolve: "medusa-myparcel/providers/myparcel-fulfillment",
+            id: "myparcel",
+          },
+        ],
+      },
+    },
+  },
+})
+```
 
-Learn more about [Medusa’s architecture](https://docs.medusajs.com/learn/introduction/architecture) and [commerce modules](https://docs.medusajs.com/learn/fundamentals/modules/commerce-modules) in the Docs.
+2) Set environment variables:
 
-## Community & Contributions
+```bash
+# Required. 32 bytes, base64 or hex.
+MYPARCEL_SETTINGS_ENCRYPTION_KEY=...
 
-The community and core team are available in [GitHub Discussions](https://github.com/medusajs/medusa/discussions), where you can ask for support, discuss roadmap, and share ideas.
+# Optional. Overrides the SendMyParcel API base URL.
+MYPARCEL_API_BASE_URL=https://api.sendmyparcel.be
+```
 
-Join our [Discord server](https://discord.com/invite/medusajs) to meet other community members.
+3) Run your Medusa migrations (for example `yarn medusa db:migrate`).
 
-## Other channels
+## Admin setup
 
-- [GitHub Issues](https://github.com/medusajs/medusa/issues)
-- [Twitter](https://twitter.com/medusajs)
-- [LinkedIn](https://www.linkedin.com/company/medusajs)
-- [Medusa Blog](https://medusajs.com/blog/)
-# medusa-myparcel
+- Configure the API key and defaults in Admin -> Settings -> MyParcel.
+- Create a MyParcel shipping option in Admin -> MyParcel -> Setup. Base prices are in cents and MyParcel surcharges are added at checkout.
+- Use the order widget to export shipments, register labels, refresh track and trace, and email return labels.
+
+## Storefront integration
+
+- Fetch delivery options from `/store/myparcel/delivery-options?cart_id=...`.
+  - Optional: add `carrier=postnl` (or `bpost`, `dpd`) to filter carriers.
+- Store the selected MyParcel option in the shipping method data under one of:
+  - `myparcel`
+  - `myparcel_delivery`
+  - `myparcel_selection`
+- The export flow reads the selection from that data. For NL/BE addresses a house number is required.
+
+## API endpoints
+
+Admin:
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/admin/myparcel/settings` | Get saved settings. |
+| PUT | `/admin/myparcel/settings` | Update settings (API key, defaults). |
+| POST | `/admin/myparcel/settings` | Test API connection. |
+| POST | `/admin/myparcel/settings/test` | Test API connection (alias). |
+| GET | `/admin/myparcel/setup` | List service zones, profiles, and MyParcel options. |
+| POST | `/admin/myparcel/setup` | Create or update a MyParcel shipping option. |
+| GET | `/admin/myparcel/consignments` | List consignments (supports `limit`, `offset`, `status`, `carrier`, `order_id`). |
+| GET | `/admin/myparcel/orders/:order_id/consignment` | Get consignment + checkout selection. |
+| POST | `/admin/myparcel/orders/:order_id/export` | Export shipment to MyParcel. |
+| POST | `/admin/myparcel/orders/:order_id/register` | Register shipment and generate label. |
+| GET | `/admin/myparcel/orders/:order_id/label` | Download label PDF (`format`, `position`). |
+| POST | `/admin/myparcel/orders/:order_id/track-trace/refresh` | Refresh track & trace. |
+| POST | `/admin/myparcel/orders/:order_id/return-label/email` | Email return label (uses order email). |
+
+Store:
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/store/myparcel/delivery-options` | Delivery options by cart (`cart_id`, optional `carrier`). |
+
+## Notes
+- Default carriers are PostNL, bpost, and DPD.
+- Delivery options are fetched from `https://api.myparcel.nl`.
+- Shipments and labels are created via the SendMyParcel API (`https://api.sendmyparcel.be`).
+- Return labels are currently limited to bpost (SendMyParcel.be).
+
+## Development
+
+```bash
+yarn dev
+```
+
+```bash
+yarn build
+```

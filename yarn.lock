@@ -1991,7 +1991,7 @@
   resolved "https://registry.yarnpkg.com/@medusajs/inventory/-/inventory-2.12.3.tgz#afade024a0833b630e1de428cefc1b92059dbcc6"
   integrity sha512-wO20S7HLjnL29TPLS5edDzxyhu4WlZ/3tl5LD9KBOCvTF1HNoO7BgV49jGck3lpzYc8AGDbwnwXnQ498tgqj6Q==
 
-"@medusajs/js-sdk@2.12.3":
+"@medusajs/js-sdk@2.12.3", "@medusajs/js-sdk@^2.12.3":
   version "2.12.3"
   resolved "https://registry.yarnpkg.com/@medusajs/js-sdk/-/js-sdk-2.12.3.tgz#0c394cefc6d75b0c5bc3869006aeda2b521d1395"
   integrity sha512-8Tmmywg/VToTTwyhInSZMO0t0MuYgoak+e1o8xIXsH/Hp+7kkoXKRalib3/t9pnNC/L9s9vI9Slj+P1v9z0RxA==
@@ -2418,6 +2418,26 @@
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/@msgpackr-extract/msgpackr-extract-win32-x64/-/msgpackr-extract-win32-x64-3.0.3.tgz#0aa5502d547b57abfc4ac492de68e2006e417242"
   integrity sha512-x0fWaQtYp4E6sktbsdAqnehxDgEc/VwM7uLsRCYWaiGu0ykYdZPiS8zCWdnjHwyiumousxfBm4SO31eXqwEZhQ==
+
+"@myparcel/constants@^2.0.0", "@myparcel/constants@^2.6.0":
+  version "2.6.0"
+  resolved "https://registry.yarnpkg.com/@myparcel/constants/-/constants-2.6.0.tgz#ff43c55767ae724da3e5edb50aa1102c6d639151"
+  integrity sha512-aUcGTj7lHLW8sFtrD4YFK3gKAXUoD0MmkzHQo9k2K82LLqiPUGZ2iqj6wcoeyjsSny3pX1CS+G38cPwOOj1KvA==
+  dependencies:
+    "@myparcel/ts-utils" "^1.7.0"
+
+"@myparcel/sdk@^4.4.2":
+  version "4.4.2"
+  resolved "https://registry.yarnpkg.com/@myparcel/sdk/-/sdk-4.4.2.tgz#b327468ab0dd61a2cbaf8c499bf230178ff9fa88"
+  integrity sha512-fNLKtYb98oDgRWm2MFWxXCEFyrE3OP57SKdRVcQm6ICyxg0cM3A2g+Dvs9kjMCNtA0/SnMPigf1VTRSc6qUyYg==
+  dependencies:
+    "@myparcel/constants" "^2.0.0"
+    "@myparcel/ts-utils" "^1.6.0"
+
+"@myparcel/ts-utils@^1.6.0", "@myparcel/ts-utils@^1.7.0":
+  version "1.14.0"
+  resolved "https://registry.yarnpkg.com/@myparcel/ts-utils/-/ts-utils-1.14.0.tgz#a7cf7443d9cb3edbb7b354b6fd61de2b09da7407"
+  integrity sha512-02KQSFQ5RWOy91r6+obPbU9QuAfsoOQC7YllODLI9gaz6bpHdRR/p7VVQrKOaX40gorTBiXX60bZs8rKRSIIMA==
 
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
@@ -5816,12 +5836,24 @@
   resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.64.2.tgz#be06e7c7966d14ea3e7c82bea1086b463f2f6809"
   integrity sha512-hdO8SZpWXoADNTWXV9We8CwTkXU88OVWRBcsiFrk7xJQnhm6WRlweDzMD+uH+GnuieTBVSML6xFa17C2cNV8+g==
 
+"@tanstack/query-core@5.90.14":
+  version "5.90.14"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.90.14.tgz#4c45ab5f41a45a051001bae09bb155b021bf4e87"
+  integrity sha512-/6di2yNI+YxpVrH9Ig74Q+puKnkCE+D0LGyagJEGndJHJc6ahkcc/UqirHKy8zCYE/N9KLggxcQvzYCsUBWgdw==
+
 "@tanstack/react-query@5.64.2":
   version "5.64.2"
   resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.64.2.tgz#199c8a5a8ff92a8565f8cdd378747398347512a2"
   integrity sha512-3pakNscZNm8KJkxmovvtZ4RaXLyiYYobwleTMvpIGUoKRa8j8VlrQKNl5W8VUEfVfZKkikvXVddLuWMbcSCA1Q==
   dependencies:
     "@tanstack/query-core" "5.64.2"
+
+"@tanstack/react-query@^5.51.1":
+  version "5.90.14"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.90.14.tgz#fff7e5e083c6dbe18fd0b2837d3f6174615f0c06"
+  integrity sha512-JAMuULej09hrZ14W9+mxoRZ44rR2BuZfCd6oKTQVNfynQxCN3muH3jh3W46gqZNw5ZqY0ZVaS43Imb3dMr6tgw==
+  dependencies:
+    "@tanstack/query-core" "5.90.14"
 
 "@tanstack/react-table@8.20.5":
   version "8.20.5"
