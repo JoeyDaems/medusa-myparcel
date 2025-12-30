@@ -1,4 +1,4 @@
-# medusa-myparcel
+# @joey-d/medusa-myparcel
 
 IMPORTANT: This plugin is under development and should not be used for production projects.
 
@@ -17,7 +17,7 @@ Medusa v2 plugin that integrates MyParcel (SendMyParcel.be) delivery options, pr
 ## Install
 
 ```bash
-yarn add medusa-myparcel
+yarn add @joey-d/medusa-myparcel
 ```
 
 If you are developing locally, add it via a workspace or `file:` dependency.
@@ -32,7 +32,7 @@ import { defineConfig } from "@medusajs/framework/utils"
 export default defineConfig({
   plugins: [
     {
-      resolve: "medusa-myparcel",
+      resolve: "@joey-d/medusa-myparcel",
       options: {
         // Optional: "A4" | "A6"
         default_label_format: "A6",
@@ -44,7 +44,7 @@ export default defineConfig({
       options: {
         providers: [
           {
-            resolve: "medusa-myparcel/providers/myparcel-fulfillment",
+            resolve: "@joey-d/medusa-myparcel/providers/myparcel-fulfillment",
             id: "myparcel",
           },
         ],
