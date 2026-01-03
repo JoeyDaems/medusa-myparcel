@@ -1,14 +1,11 @@
+import type { Logger } from "@medusajs/framework/types"
 import { MyParcelFulfillmentService } from "../src/providers/myparcel-fulfillment/service"
 
-type Logger = {
-  warn: (message: string) => void
-}
-
-const logger: Logger = {
-  warn: (message) => {
+const logger = {
+  warn: (message: string) => {
     console.warn(message)
   },
-}
+} as unknown as Logger
 
 const assertEqual = (label: string, actual: unknown, expected: unknown) => {
   if (actual !== expected) {
