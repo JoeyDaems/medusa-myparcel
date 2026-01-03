@@ -122,6 +122,75 @@ function resolveMinorAmount(value: unknown): number | undefined {
   return undefined
 }
 
+function resolveMajorAmount(value: unknown): number | undefined {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : undefined
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
+
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>
+    if (typeof (record as { toJSON?: unknown }).toJSON === "function") {
+      const serialized = (record as { toJSON: () => unknown }).toJSON()
+      const resolved = resolveMajorAmount(serialized)
+      if (typeof resolved === "number") {
+        return resolved
+      }
+    }
+    if ("numeric" in record) {
+      return resolveMajorAmount(record.numeric)
+    }
+    if ("value" in record) {
+      return resolveMajorAmount(record.value)
+    }
+    if ("raw" in record) {
+      return resolveMajorAmount(record.raw)
+    }
+  }
+
+  return undefined
+}
+
+function resolveItemsTotal(items: unknown): number | undefined {
+  if (!Array.isArray(items)) {
+    return undefined
+  }
+
+  let total = 0
+  let found = false
+  for (const item of items) {
+    if (!item || typeof item !== "object") {
+      continue
+    }
+    const record = item as Record<string, unknown>
+    let amount = resolveMajorAmount(record.item_total)
+    if (amount === undefined) {
+      amount = resolveMajorAmount(record.total)
+    }
+    if (amount === undefined) {
+      amount = resolveMajorAmount(record.subtotal)
+    }
+    if (amount === undefined) {
+      const unitPrice = resolveMajorAmount(record.unit_price)
+      const quantity = resolveMajorAmount(record.quantity)
+      if (unitPrice !== undefined && quantity !== undefined) {
+        amount = unitPrice * quantity
+      }
+    }
+
+    if (typeof amount === "number") {
+      total += amount
+      found = true
+    }
+  }
+
+  return found ? total : undefined
+}
+
 function resolveFreeShippingThresholds(optionData: Record<string, unknown>) {
   const candidate =
     (optionData?.free_shipping_thresholds as Record<string, unknown> | undefined) ??
@@ -199,11 +268,15 @@ export class MyParcelFulfillmentService extends AbstractFulfillmentProviderServi
     )
 
     const countryCode = normalizeCountryCode(context?.shipping_address?.country_code)
-    const itemTotal = resolveMinorAmount(context?.item_total)
+    const itemTotal =
+      resolveMajorAmount(context?.item_total) ??
+      resolveMajorAmount(context?.raw_item_total) ??
+      resolveItemsTotal(context?.items)
     const threshold = countryCode
       ? resolveFreeShippingThresholds(optionData)[countryCode]
       : undefined
-    if (typeof threshold === "number" && itemTotal !== undefined && itemTotal >= threshold) {
+    const thresholdMajor = typeof threshold === "number" ? centsToMajor(threshold) : undefined
+    if (typeof thresholdMajor === "number" && itemTotal !== undefined && itemTotal >= thresholdMajor) {
       return {
         calculated_amount: 0,
         is_calculated_price_tax_inclusive: isTaxInclusive,

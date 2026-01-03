@@ -1,6 +1,6 @@
 {
   "name": "@joey-d/medusa-myparcel",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A starter for Medusa plugins.",
   "author": "Medusa (https://medusajs.com)",
   "license": "MIT",
@@ -32,7 +32,8 @@
     "build": "medusa plugin:build",
     "dev": "medusa plugin:develop",
     "prepublishOnly": "medusa plugin:build",
-    "postinstall": "node scripts/patch-buffer-equal-constant-time.js"
+    "postinstall": "node scripts/patch-buffer-equal-constant-time.js",
+    "test": "ts-node scripts/test-free-shipping.ts"
   },
   "dependencies": {
     "@myparcel/constants": "^2.6.0",
