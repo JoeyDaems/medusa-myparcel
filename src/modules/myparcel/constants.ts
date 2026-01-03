@@ -14,3 +14,5 @@ export const DEFAULT_ALLOWED_CARRIERS: CarrierKey[] = [
 
 export const DEFAULT_LABEL_FORMAT = "A6"
 export const DEFAULT_A4_POSITION = 1
+
+export const DEFAULT_FREE_SHIPPING_THRESHOLDS: Record<string, number> = {}

@@ -12,7 +12,7 @@ import {
   toast,
 } from "@medusajs/ui"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { sdk } from "../../../lib/sdk"
 
 type ServiceZone = {
@@ -30,6 +30,7 @@ type ShippingOption = {
   name: string
   service_zone?: { id: string; name: string }
   shipping_profile?: { id: string; name: string }
+  data?: Record<string, unknown> | null
 }
 
 type SetupResponse = {
@@ -50,8 +51,35 @@ const CARRIERS = ["bpost", "dpd", "postnl"] as const
 
 type FallbackPrices = typeof DEFAULT_PRICES
 type FallbackPricesByCarrier = Record<(typeof CARRIERS)[number], FallbackPrices>
+type FreeShippingThresholdRow = {
+  id: string
+  country: string
+  amount: number
+}
 
 const clonePrices = (): FallbackPrices => ({ ...DEFAULT_PRICES })
+const toCents = (value: number) =>
+  Number.isFinite(value) ? Math.max(0, Math.round(value * 100)) : 0
+
+const toMajor = (value: unknown) => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value / 100
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed / 100 : undefined
+  }
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>
+    if ("value" in record) {
+      return toMajor(record.value)
+    }
+    if ("raw" in record) {
+      return toMajor(record.raw)
+    }
+  }
+  return undefined
+}
 
 const MyParcelSetupPage = () => {
   const { data, isLoading, refetch } = useQuery<SetupResponse>({
@@ -59,10 +87,20 @@ const MyParcelSetupPage = () => {
     queryFn: () => sdk.client.fetch(`/admin/myparcel/setup`),
   })
 
+  const thresholdIdRef = useRef(0)
+  const makeThresholdRow = (country = "", amount = 0): FreeShippingThresholdRow => ({
+    id: `threshold-${thresholdIdRef.current++}`,
+    country,
+    amount,
+  })
+
   const [serviceZoneId, setServiceZoneId] = useState<string | undefined>()
   const [shippingProfileId, setShippingProfileId] = useState<string | undefined>()
   const [name, setName] = useState("MyParcel Delivery")
   const [fallbackPrices, setFallbackPrices] = useState(DEFAULT_PRICES)
+  const [freeShippingThresholds, setFreeShippingThresholds] = useState<
+    FreeShippingThresholdRow[]
+  >([])
   const [useCarrierPricing, setUseCarrierPricing] = useState(false)
   const [fallbackPricesByCarrier, setFallbackPricesByCarrier] = useState<FallbackPricesByCarrier>(() =>
     CARRIERS.reduce((acc, carrier) => {
@@ -80,6 +118,47 @@ const MyParcelSetupPage = () => {
       },
     }))
   }
+
+  useEffect(() => {
+    if (!serviceZoneId || !data?.shipping_options) {
+      return
+    }
+
+    const match = data.shipping_options.find(
+      (option) => option.service_zone?.id === serviceZoneId
+    )
+    const thresholds =
+      (match?.data?.free_shipping_thresholds as Record<string, unknown> | undefined) ??
+      (match?.data?.freeShippingThresholds as Record<string, unknown> | undefined)
+
+    if (!thresholds || typeof thresholds !== "object") {
+      setFreeShippingThresholds([])
+      return
+    }
+
+    const rows = Object.entries(thresholds)
+      .map(([country, value]) => {
+        const amount = toMajor(value)
+        if (amount === undefined) {
+          return null
+        }
+        return makeThresholdRow(String(country).toUpperCase(), amount)
+      })
+      .filter((row): row is FreeShippingThresholdRow => Boolean(row))
+
+    setFreeShippingThresholds(rows)
+  }, [data, serviceZoneId])
+
+  const thresholdPayload = useMemo(() => {
+    return freeShippingThresholds.reduce<Record<string, number>>((acc, row) => {
+      const code = row.country.trim().toUpperCase()
+      if (!code) {
+        return acc
+      }
+      acc[code] = toCents(row.amount)
+      return acc
+    }, {})
+  }, [freeShippingThresholds])
 
   const serviceZoneOptions = useMemo(
     () =>
@@ -108,6 +187,7 @@ const MyParcelSetupPage = () => {
           service_zone_id: serviceZoneId,
           shipping_profile_id: shippingProfileId,
           fallback_prices: fallbackPrices,
+          free_shipping_thresholds: thresholdPayload,
           ...(useCarrierPricing
             ? { fallback_prices_by_carrier: fallbackPricesByCarrier }
             : {}),
@@ -208,6 +288,72 @@ const MyParcelSetupPage = () => {
                   setFallbackPrices({ ...fallbackPrices, express: Number(event.target.value) })
                 }
               />
+            </div>
+
+            <div className="mt-2">
+              <Text size="small" weight="plus">
+                Free shipping thresholds (EUR)
+              </Text>
+              <Text size="small" className="text-ui-fg-subtle">
+                Applied to tax-inclusive item total (excluding shipping).
+              </Text>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {freeShippingThresholds.length ? (
+                freeShippingThresholds.map((row, index) => (
+                  <div key={row.id} className="grid grid-cols-1 gap-3 md:grid-cols-6">
+                    <Input
+                      placeholder="Country code"
+                      value={row.country}
+                      onChange={(event) => {
+                        const value = event.target.value.toUpperCase()
+                        setFreeShippingThresholds((prev) =>
+                          prev.map((item, rowIndex) =>
+                            rowIndex === index ? { ...item, country: value } : item
+                          )
+                        )
+                      }}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Amount (EUR)"
+                      value={row.amount}
+                      onChange={(event) => {
+                        const nextAmount = Number(event.target.value)
+                        setFreeShippingThresholds((prev) =>
+                          prev.map((item, rowIndex) =>
+                            rowIndex === index ? { ...item, amount: nextAmount } : item
+                          )
+                        )
+                      }}
+                    />
+                    <Button
+                      variant="secondary"
+                      onClick={() =>
+                        setFreeShippingThresholds((prev) =>
+                          prev.filter((_, rowIndex) => rowIndex !== index)
+                        )
+                      }
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <Text size="small" className="text-ui-fg-subtle">
+                  No free shipping thresholds configured yet.
+                </Text>
+              )}
+
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  setFreeShippingThresholds((prev) => [...prev, makeThresholdRow()])
+                }
+              >
+                Add threshold
+              </Button>
             </div>
 
             <div className="flex items-center justify-between rounded-lg border border-ui-border-base px-4 py-3">

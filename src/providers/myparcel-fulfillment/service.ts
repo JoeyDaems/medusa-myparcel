@@ -9,6 +9,7 @@ import {
   resolvePickupPrice,
   type DeliverySelection,
 } from "../../modules/myparcel/utils/delivery-options"
+import { DEFAULT_FREE_SHIPPING_THRESHOLDS } from "../../modules/myparcel/constants"
 
 type Dependencies = {
   logger: Logger
@@ -90,6 +91,57 @@ function resolveTaxInclusive(optionData: Record<string, unknown>): boolean {
   return typeof candidate === "boolean" ? candidate : true
 }
 
+function normalizeCountryCode(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined
+  }
+  const trimmed = value.trim()
+  return trimmed ? trimmed.toUpperCase() : undefined
+}
+
+function resolveMinorAmount(value: unknown): number | undefined {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? Math.round(value) : undefined
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? Math.round(parsed) : undefined
+  }
+
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>
+    if ("value" in record) {
+      return resolveMinorAmount(record.value)
+    }
+    if ("raw" in record) {
+      return resolveMinorAmount(record.raw)
+    }
+  }
+
+  return undefined
+}
+
+function resolveFreeShippingThresholds(optionData: Record<string, unknown>) {
+  const candidate =
+    (optionData?.free_shipping_thresholds as Record<string, unknown> | undefined) ??
+    (optionData?.freeShippingThresholds as Record<string, unknown> | undefined)
+  const thresholds: Record<string, number> = {
+    ...DEFAULT_FREE_SHIPPING_THRESHOLDS,
+  }
+
+  if (candidate && typeof candidate === "object") {
+    Object.entries(candidate).forEach(([key, value]) => {
+      const amount = resolveMinorAmount(value)
+      if (typeof amount === "number") {
+        thresholds[String(key).toUpperCase()] = amount
+      }
+    })
+  }
+
+  return thresholds
+}
+
 export class MyParcelFulfillmentService extends AbstractFulfillmentProviderService {
   static identifier = "myparcel"
   protected logger_: Logger
@@ -145,6 +197,18 @@ export class MyParcelFulfillmentService extends AbstractFulfillmentProviderServi
     const baseCents = toCents(
       resolveBasePrice(carrierBasePrices ?? basePrices, selectionType)
     )
+
+    const countryCode = normalizeCountryCode(context?.shipping_address?.country_code)
+    const itemTotal = resolveMinorAmount(context?.item_total)
+    const threshold = countryCode
+      ? resolveFreeShippingThresholds(optionData)[countryCode]
+      : undefined
+    if (typeof threshold === "number" && itemTotal !== undefined && itemTotal >= threshold) {
+      return {
+        calculated_amount: 0,
+        is_calculated_price_tax_inclusive: isTaxInclusive,
+      }
+    }
 
     const address = context?.shipping_address
     if (!address?.postal_code || !address?.country_code) {

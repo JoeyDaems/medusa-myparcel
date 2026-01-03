@@ -1,6 +1,9 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import type MyParcelModuleService from "../../../../modules/myparcel/service"
-import { DEFAULT_ALLOWED_CARRIERS } from "../../../../modules/myparcel/constants"
+import {
+  DEFAULT_ALLOWED_CARRIERS,
+  DEFAULT_FREE_SHIPPING_THRESHOLDS,
+} from "../../../../modules/myparcel/constants"
 
 // Medusa registers fulfillment providers under `${provider.identifier}_${optionName}`.
 // With a `medusa-config.ts` provider option id of "myparcel" and service identifier "myparcel",
@@ -41,6 +44,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     name,
     fallback_prices,
     fallback_prices_by_carrier,
+    free_shipping_thresholds,
   } = body
 
   if (!service_zone_id || !shipping_profile_id || !name) {
@@ -85,6 +89,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       typeof fallback_prices_by_carrier !== "undefined"
         ? fallback_prices_by_carrier
         : (match?.data?.fallback_prices_by_carrier ?? undefined),
+    free_shipping_thresholds:
+      free_shipping_thresholds ||
+      (match?.data?.free_shipping_thresholds ?? DEFAULT_FREE_SHIPPING_THRESHOLDS),
     package_type: "package",
     platform: "belgie",
     default_carrier: settings?.default_carrier || "bpost",
